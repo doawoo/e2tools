@@ -49,6 +49,14 @@
 # define O_PATH 010000000
 #endif
 
+// MacOS `open()` is a bit different, it doesn't support `O_NOFOLLOW`
+// We can work around this by using `O_RDONLY` and `O_SYMLINK` to enable reading the symlink itself
+#ifdef __APPLE__
+  #define SYMLINK_OPEN_FLAGS (O_RDONLY | O_SYMLINK)
+#else
+  #define SYMLINK_OPEN_FLAGS (O_PATH | O_NOFOLLOW)
+#endif
+
 /* Local Prototypes */
 
 static long
@@ -158,7 +166,7 @@ put_file(ext2_filsys fs, ext2_ino_t cwd, char *infile, char *outfile,
         }
       else
         {
-          if (0 > (fd = open(infile, O_PATH | O_NOFOLLOW)))
+          if (0 > (fd = open(infile, SYMLINK_OPEN_FLAGS)))
             {
               perror(infile);
               fprintf(stderr, "Error opening input link file: %s\n", infile);
